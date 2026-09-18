@@ -17,7 +17,7 @@ Job seekers in India — both first-time graduates and experienced professionals
 ## 3. Goals and Non-Goals
 
 **Goals (v1):**
-- AI-assisted rewriting that turns rough input into professional resume language (cloud-based, Gemini 2.5 Flash-Lite).
+- AI-assisted rewriting that turns rough input into professional resume language (cloud-based, Gemini 3.5 Flash-Lite).
 - 1-2 genuinely good, ATS-safe (single-column, no graphics) templates.
 - Deterministic ATS-health checklist scoring, with optional job-description paste for keyword-match scoring.
 - Fully working offline for everything except AI rewriting and JD-matching (core value must survive no internet).
@@ -65,7 +65,7 @@ Job seekers in India — both first-time graduates and experienced professionals
 **Resume data entry** — flexible section list, add/remove/reorder, supports both personas without forcing either into the wrong shape.
 
 **AI-assisted rewriting**
-- Cloud-based via **Gemini 2.5 Flash-Lite** (cheapest sufficient model for short text-rewrite tasks, ~₹0.01-0.02/rewrite — billing enabled from day one, no free-tier-quota juggling logic needed since cost is already trivial).
+- Cloud-based via **Gemini 3.5 Flash-Lite** (cheapest sufficient model for short text-rewrite tasks, ~₹0.01-0.02/rewrite — billing enabled from day one, no free-tier-quota juggling logic needed since cost is already trivial).
 - Routed through a **Cloudflare Workers** proxy (free tier, 100K requests/day, no credit card required) — the API key must never live in the client app itself.
 - User sees AI's rewrite alongside their original text; explicit Accept / Edit / Keep Original. Never silently overwrites.
 - Degrades gracefully with no internet: AI button disabled with a clear "needs internet" message; everything else (manual entry, templates, export) works fully offline.

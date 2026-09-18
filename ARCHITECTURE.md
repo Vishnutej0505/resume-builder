@@ -17,7 +17,7 @@ There is **no application server and no relational database.** All resume data l
            │ HTTPS (only for AI rewrite)
            ▼
 ┌─────────────────────────┐        ┌──────────────────────────┐
-│  Cloudflare Worker       │──────▶│  Gemini 2.5 Flash-Lite API │
+│  Cloudflare Worker       │──────▶│  Gemini 3.5 Flash-Lite API │
 │  (stateless proxy)       │       └──────────────────────────┘
 │  + Cloudflare KV:         │
 │    "usage:{date}" counter │
@@ -116,7 +116,7 @@ Note: there is **no separate `freeCreditsExhausted` boolean**, even though the o
 
 | Integration | Purpose | Auth | Cost | Data shared |
 |---|---|---|---|---|
-| **Gemini 2.5 Flash-Lite** (Google) | AI text rewriting | API key, held only in the Worker | ~₹0.01-0.02/call, billed to your Google Cloud account | Section text only, no PII beyond whatever the user typed into that section |
+| **Gemini 3.5 Flash-Lite** (Google) | AI text rewriting | API key, held only in the Worker | ~₹0.01-0.02/call, billed to your Google Cloud account | Section text only, no PII beyond whatever the user typed into that section |
 | **Cloudflare Workers** | Proxy that hides the Gemini key from the client | Worker secret (`GEMINI_API_KEY`) + shared header (`APP_SHARED_SECRET`) | Free tier (100K req/day) | Passes through section text; stores nothing itself |
 | **Cloudflare KV** | Daily spend-cap counter | Bound to the Worker only, not reachable from the app | Free tier (well within limits for one counter/day) | One integer per date, no user data |
 | **Google Play Billing** (`react-native-iap`) | ₹29/month subscription | Handled entirely by Play Store account, no custom auth | Google's standard cut of subscription revenue | Purchase/subscription state only, no resume data |
@@ -175,7 +175,7 @@ Client behavior per PRD Section 8: **any non-200 response, or a client-side fetc
 
 Fixed external contract (Google's REST `generateContent` endpoint) — not something this project designs, just documented for reference:
 ```
-POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={GEMINI_API_KEY}
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={GEMINI_API_KEY}
 
 Body: { "contents": [{ "parts": [{ "text": "<prompt + user's section text>" }] }] }
 ```

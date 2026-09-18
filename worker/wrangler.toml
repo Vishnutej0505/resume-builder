@@ -1,17 +1,16 @@
 name = "resume-builder-ai-proxy"
 main = "src/index.js"
 compatibility_date = "2025-01-01"
+workers_dev = true
 
 # Secrets (never in this file — set with `wrangler secret put <NAME>`):
 #   GEMINI_API_KEY      — Gemini API key, called from src/index.js only
 #   APP_SHARED_SECRET   — must match EXPO_PUBLIC_APP_SHARED_SECRET in the app's .env
 #
 # KV namespace for the daily spend cap (ARCHITECTURE.md Section 4.2).
-# Create it once with `wrangler kv namespace create USAGE_KV`, then paste the
-# returned id below and uncomment.
-# [[kv_namespaces]]
-# binding = "USAGE_KV"
-# id = "<paste-id-here>"
+[[kv_namespaces]]
+binding = "USAGE_KV"
+id = "41625411567a4921821255e5b7e2a073"
 
 # `wrangler dev` fails fast without a real KV binding. For local testing,
 # create a dev-only namespace instead:

@@ -2,7 +2,7 @@
 
 Cloud-based, not on-device — see → [[Offline LLM idea (rejected)]] for why.
 
-- **Model:** Gemini 2.5 Flash-Lite. Cheapest tier sufficient for short text-rewrite tasks (resume bullets). ~₹0.01-0.02 per rewrite. Billing enabled from day one — cost is trivial enough that free-tier-quota-juggling logic isn't worth building.
+- **Model:** Gemini 3.5 Flash-Lite. Cheapest tier sufficient for short text-rewrite tasks (resume bullets). ~₹0.01-0.02 per rewrite. Billing enabled from day one — cost is trivial enough that free-tier-quota-juggling logic isn't worth building.
 - **Proxy:** Cloudflare Workers (free tier, 100K requests/day, **no credit card required**). The API key must never live in the client app — it would be extractable from the APK.
   - Chosen over Firebase Functions specifically because Firebase requires adding a credit card and moving to the Blaze plan even to access free-tier usage.
 - **UX rule (non-negotiable):** the AI's rewrite is shown alongside the user's original text with explicit Accept / Edit / Keep Original. Never silently auto-applied — same principle used in the LexLint project.
