@@ -1,6 +1,7 @@
 import { buildPrompt } from './prompts.js';
 
 const MAX_TEXT_LENGTH = 2000;
+const MAX_JD_LENGTH = 6000;
 // ponytail: fixed budget, no per-IP breakdown — one global daily ceiling is
 // the whole point (ARCHITECTURE.md Section 5: caps worst-case Gemini spend
 // even if the shared secret leaks). Retune once real usage data exists.
@@ -45,11 +46,14 @@ export default {
       return json({ error: 'empty_text' }, 400);
     }
 
-    const { sectionType, text } = body ?? {};
+    const { sectionType, text, jobDescription } = body ?? {};
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
       return json({ error: 'empty_text' }, 400);
     }
     if (text.length > MAX_TEXT_LENGTH) {
+      return json({ error: 'text_too_long' }, 400);
+    }
+    if (jobDescription != null && (typeof jobDescription !== 'string' || jobDescription.length > MAX_JD_LENGTH)) {
       return json({ error: 'text_too_long' }, 400);
     }
 
@@ -63,7 +67,7 @@ export default {
     await incrementDailyUsage(env.USAGE_KV);
 
     try {
-      const rewrittenText = await callGemini(env.GEMINI_API_KEY, sectionType, text);
+      const rewrittenText = await callGemini(env.GEMINI_API_KEY, sectionType, text, jobDescription);
       return json({ rewrittenText });
     } catch {
       return json({ error: 'upstream_error' }, 502);
@@ -89,8 +93,8 @@ async function incrementDailyUsage(kv) {
   await kv.put(key, String(count + 1), { expirationTtl: 172800 });
 }
 
-async function callGemini(apiKey, sectionType, text) {
-  const prompt = buildPrompt(sectionType, text);
+async function callGemini(apiKey, sectionType, text, jobDescription) {
+  const prompt = buildPrompt(sectionType, text, jobDescription);
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
     {

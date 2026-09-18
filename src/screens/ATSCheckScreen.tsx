@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useResume } from '../context/ResumeContext.tsx';
 import { matchJobDescription, runChecklist, type JDMatchResult } from '../lib/ats.ts';
+import { fullRewriteResume, type FullRewriteProgress } from '../lib/fullRewrite.ts';
 import { colors, fontSize, radius, spacing } from '../theme/tokens.ts';
 
 interface Props {
@@ -10,21 +11,58 @@ interface Props {
   onBlocked: () => void;
 }
 
+const MIN_JD_LENGTH = 20;
+
 export function ATSCheckScreen({ onNavigateHome, onNavigatePreview, onBlocked }: Props) {
-  const { resume, aiUsage } = useResume();
+  const { resume, aiUsage, startTailoring, spendAICredits } = useResume();
   const [jobDescription, setJobDescription] = useState('');
   const [result, setResult] = useState<JDMatchResult | null | 'too-short'>(null);
+  const [rewriteProgress, setRewriteProgress] = useState<FullRewriteProgress | null>(null);
 
   const checklist = useMemo(() => runChecklist(resume), [resume]);
-  const canCheckMatch = aiUsage.subscriptionActive || aiUsage.freeCreditsRemaining > 0;
+  const canUseAI = aiUsage.subscriptionActive || aiUsage.freeCreditsRemaining > 0;
+  const isRewriting = rewriteProgress !== null;
 
   function handleCheckMatch() {
-    if (!canCheckMatch) {
+    if (!canUseAI) {
       onBlocked();
       return;
     }
     const match = matchJobDescription(resume, jobDescription);
     setResult(match === null ? 'too-short' : match);
+  }
+
+  async function handleFullRewrite() {
+    if (!canUseAI) {
+      onBlocked();
+      return;
+    }
+    if (jobDescription.trim().length < MIN_JD_LENGTH) {
+      Alert.alert('Job description too short', 'Paste the full job listing so the rewrite has something to target.');
+      return;
+    }
+
+    setRewriteProgress({ done: 0, total: 0 });
+    const { resume: tailored, rewrittenCount, failedCount } = await fullRewriteResume(
+      resume,
+      jobDescription,
+      setRewriteProgress
+    );
+    setRewriteProgress(null);
+
+    if (rewrittenCount > 0) {
+      spendAICredits(rewrittenCount);
+      startTailoring(tailored);
+      Alert.alert(
+        'Resume tailored',
+        failedCount > 0
+          ? `Rewrote ${rewrittenCount} bullet${rewrittenCount === 1 ? '' : 's'} for this job (${failedCount} kept as-is after a failed rewrite). Review it on Home, then Preview to export.`
+          : `Rewrote ${rewrittenCount} bullet${rewrittenCount === 1 ? '' : 's'} for this job. Review it on Home, then Preview to export.`
+      );
+      onNavigateHome();
+    } else {
+      Alert.alert('Full rewrite failed', "Couldn't reach the AI service. Your resume is unchanged — try again.");
+    }
   }
 
   return (
@@ -53,12 +91,30 @@ export function ATSCheckScreen({ onNavigateHome, onNavigatePreview, onBlocked }:
             value={jobDescription}
             onChangeText={setJobDescription}
             multiline
+            editable={!isRewriting}
             placeholder="Paste the target job description here…"
             placeholderTextColor={colors.textSecondary}
           />
-          <Pressable style={styles.checkButton} onPress={handleCheckMatch}>
+          <Pressable style={styles.checkButton} onPress={handleCheckMatch} disabled={isRewriting}>
             <Text style={styles.checkButtonText}>Check Match</Text>
           </Pressable>
+          <Pressable
+            style={[styles.checkButton, styles.rewriteButton]}
+            onPress={handleFullRewrite}
+            disabled={isRewriting}
+          >
+            <Text style={styles.checkButtonText}>
+              {isRewriting
+                ? rewriteProgress && rewriteProgress.total > 0
+                  ? `Rewriting ${rewriteProgress.done} of ${rewriteProgress.total}…`
+                  : 'Starting…'
+                : 'Full Rewrite for This Job'}
+            </Text>
+          </Pressable>
+          <Text style={styles.hint}>
+            Full Rewrite retargets every bullet in your resume to this job description — review and edit the result
+            on Home before exporting. Your saved master resume isn&apos;t changed until you decide what to keep.
+          </Text>
         </View>
 
         {result === 'too-short' && (
@@ -149,6 +205,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  rewriteButton: { backgroundColor: colors.textPrimary },
   checkButtonText: { color: '#fff', fontSize: fontSize.body, fontWeight: '600' },
   hint: { fontSize: fontSize.caption, color: colors.textSecondary },
   resultCard: {

@@ -8,7 +8,11 @@ export type RewriteResult = { ok: true; text: string } | { ok: false };
 // the user's original text — never surfaced as anything but a generic
 // retry message (ARCHITECTURE.md Section 4.1). The specific error code is
 // intentionally discarded here, not surfaced to the UI.
-export async function rewriteText(sectionType: SectionType, text: string): Promise<RewriteResult> {
+export async function rewriteText(
+  sectionType: SectionType,
+  text: string,
+  jobDescription?: string
+): Promise<RewriteResult> {
   const workerUrl = process.env.EXPO_PUBLIC_WORKER_URL;
   const sharedSecret = process.env.EXPO_PUBLIC_APP_SHARED_SECRET;
   if (!workerUrl) return { ok: false };
@@ -20,7 +24,7 @@ export async function rewriteText(sectionType: SectionType, text: string): Promi
     const res = await fetch(`${workerUrl}/rewrite`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-App-Secret': sharedSecret ?? '' },
-      body: JSON.stringify({ sectionType, text }),
+      body: JSON.stringify({ sectionType, text, jobDescription }),
       signal: controller.signal,
     });
     if (!res.ok) return { ok: false };

@@ -58,6 +58,7 @@ Android hardware back button: from ATS Check, Preview, Paywall, or Settings → 
      - **Keep Original** → dismisses the card, no change. Stays on **Home**.
   3. On failure/timeout → inline error text ("Couldn't get a suggestion — try again"), original text untouched. Stays on **Home**.
 - **Footer nav** (persistent on Home/ATS Check/Preview) → **ATS Check** or **Preview**.
+- **Tailoring banner** (only visible when a Full Rewrite result is the active draft, see Section 5 in `ARCHITECTURE.md`'s data model note) → names that this is a tailored view, not the saved master, with a **"Discard, back to master"** action that drops the tailored draft and returns every screen to the real master resume. Preview shows the same state as a small "Tailored draft" chip in its header, since Export while tailoring exports the tailored content (the whole point of the feature).
 
 ## 4. ATS Check Screen — Button Map
 
@@ -67,6 +68,11 @@ Android hardware back button: from ATS Check, Preview, Paywall, or Settings → 
     - **Blocked** → navigate to **Paywall** (origin = ATS Check).
     - **Allowed** → score computed instantly, locally, no network call (per TRD Section 6 — this is plain JS, not an AI call) → results (match %, matched/missing keywords) shown inline on the same screen. No navigation, no credit decremented (matching stays free while inside the gate; scoring itself has no marginal cost).
   - Empty/garbage/too-short JD text → skip scoring, show the generic checklist only (per PRD Section 8 edge case) — no error state, just a quieter result.
+- **"Full Rewrite for This Job" button** (implements PRD Section 6's "re-tailor" — see `ARCHITECTURE.md` §2 for the in-memory shape):
+  - Same gate as Check Match. **Blocked** → **Paywall** (origin = ATS Check).
+  - JD under ~20 chars → inline warning, no call made (same "too short to mean anything" standard as Check Match).
+  - **Allowed** → loops the single-bullet `/rewrite` call across every non-empty bullet in the resume with the JD attached as context (button label shows live "Rewriting N of M…" progress), builds a tailored copy, spends one credit per bullet actually rewritten (a failed bullet keeps its original text and isn't charged) → sets it as the active tailored draft and **navigates to Home** to review it.
+  - All-bullets-failed (e.g. offline) → alert, master resume untouched, stays on ATS Check.
 - **Footer nav** → **Home** or **Preview**.
 
 ## 5. Clarifying a PRD gap: what exactly gates JD-match scoring

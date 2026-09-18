@@ -18,6 +18,8 @@ export function HomeScreen({ onNavigateATS, onNavigatePreview, onNavigateSetting
   const {
     resume,
     aiUsage,
+    isTailoring,
+    discardTailoring,
     updatePersonalInfo,
     addSection,
     removeSection,
@@ -53,6 +55,17 @@ export function HomeScreen({ onNavigateATS, onNavigatePreview, onNavigateSetting
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
+        {isTailoring && (
+          <View style={styles.tailoringBanner}>
+            <Text style={styles.tailoringText}>
+              Viewing a version tailored for this job — your saved master resume is untouched.
+            </Text>
+            <Pressable onPress={discardTailoring}>
+              <Text style={styles.tailoringDiscard}>Discard, back to master</Text>
+            </Pressable>
+          </View>
+        )}
+
         <PersonalInfoCard personalInfo={resume.personalInfo} onChange={updatePersonalInfo} />
 
         {resume.sections.length === 0 ? (
@@ -170,6 +183,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addSectionText: { color: colors.accent, fontSize: fontSize.body, fontWeight: '600' },
+  tailoringBanner: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: radius.md,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  tailoringText: { fontSize: fontSize.caption, color: '#92400E' },
+  tailoringDiscard: { fontSize: fontSize.caption, fontWeight: '700', color: '#92400E' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.4)', justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: colors.bg, borderTopLeftRadius: radius.md + 8, borderTopRightRadius: radius.md + 8, padding: spacing.lg },
   modalRow: { paddingVertical: spacing.md },

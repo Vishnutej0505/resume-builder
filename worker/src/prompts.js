@@ -15,9 +15,15 @@ const SECTION_INSTRUCTIONS = {
     'Rewrite this into a clean, professional resume line for a certification entry. Keep it factual and concise.',
 };
 
-export function buildPrompt(sectionType, text) {
+// jobDescription is optional — present only for the "Full Rewrite" /
+// re-tailor flow, where every bullet is rewritten with the target job in
+// mind instead of just generically polished.
+export function buildPrompt(sectionType, text, jobDescription) {
   const instruction = SECTION_INSTRUCTIONS[sectionType] ?? SECTION_INSTRUCTIONS.experience;
-  return `${instruction} Never invent facts, numbers, or details that are not present in the input — this is for a real job application.
+  const targetingClause = jobDescription
+    ? ` Favor wording, skills, and emphasis that align with this target job description, but never invent experience the input doesn't support:\n\n${jobDescription.slice(0, 4000)}\n`
+    : '';
+  return `${instruction} Never invent facts, numbers, or details that are not present in the input — this is for a real job application.${targetingClause}
 
 Input:
 ${text}

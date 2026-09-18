@@ -13,7 +13,7 @@ interface Props {
 }
 
 export function PreviewScreen({ onNavigateHome, onNavigateATS }: Props) {
-  const { resume } = useResume();
+  const { resume, isTailoring } = useResume();
   const [isExporting, setIsExporting] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
   const html = useMemo(() => renderClassicTemplate(resume), [resume]);
@@ -52,6 +52,7 @@ export function PreviewScreen({ onNavigateHome, onNavigateATS }: Props) {
     <View style={styles.screen}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Preview</Text>
+        {isTailoring && <Text style={styles.tailoringChip}>Tailored draft</Text>}
       </View>
 
       <View style={styles.documentContainer}>
@@ -113,11 +114,22 @@ const styles = StyleSheet.create({
   header: {
     height: 56,
     paddingHorizontal: spacing.lg,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   headerTitle: { fontSize: fontSize.bodyLg, fontWeight: '700', color: colors.textPrimary },
+  tailoringChip: {
+    fontSize: fontSize.caption,
+    fontWeight: '700',
+    color: '#92400E',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+  },
   documentContainer: {
     flex: 1,
     margin: spacing.lg,

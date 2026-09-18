@@ -1,15 +1,22 @@
-import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { loadAIUsage, loadResume, saveAIUsage, saveResume } from '../lib/storage.ts';
-import type { AIUsage, PersonalInfo, SectionItem, SectionType } from '../types/resume.ts';
+import type { AIUsage, PersonalInfo, Resume, SectionItem, SectionType } from '../types/resume.ts';
 import { resumeReducer } from './resumeReducer.ts';
+import type { ResumeAction } from './resumeReducer.ts';
 
 const SAVE_DEBOUNCE_MS = 500;
 
 interface ResumeContextValue {
   isLoaded: boolean;
-  resume: ReturnType<typeof resumeReducer>;
+  resume: Resume;
   aiUsage: AIUsage;
+  // True while viewing a Full-Rewrite result instead of the persisted master
+  // — per PRD.md Section 6 ("Option A"), tailored output is session-only and
+  // is never written back into the master resume.
+  isTailoring: boolean;
+  startTailoring: (tailoredResume: Resume) => void;
+  discardTailoring: () => void;
   updatePersonalInfo: (patch: Partial<PersonalInfo>) => void;
   addSection: (sectionType: SectionType) => void;
   removeSection: (sectionType: SectionType) => void;
@@ -22,43 +29,69 @@ interface ResumeContextValue {
   removeBullet: (sectionType: SectionType, itemIndex: number, bulletIndex: number) => void;
   setTemplate: (template: string) => void;
   spendAICredit: () => void;
+  spendAICredits: (count: number) => void;
 }
 
 const ResumeContext = createContext<ResumeContextValue | null>(null);
 
-export function ResumeProvider({ children }: { children: ReactNode }) {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [resume, dispatch] = useReducer(resumeReducer, undefined, () => ({
+function emptyResume(): Resume {
+  return {
     schemaVersion: 1,
     personalInfo: { name: '', email: '', phone: '', location: '', linkedIn: null },
     sections: [],
     selectedTemplate: 'classic',
     updatedAt: new Date().toISOString(),
-  }));
+  };
+}
+
+export function ResumeProvider({ children }: { children: ReactNode }) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [masterResume, setMasterResume] = useState<Resume>(emptyResume);
+  // Non-null only during a Full Rewrite review — never persisted, never
+  // merged back into masterResume (ARCHITECTURE.md Section 2, PRD Section 6).
+  const [tailoredResume, setTailoredResume] = useState<Resume | null>(null);
   const [aiUsage, setAiUsage] = useState<AIUsage | null>(null);
+
+  const isTailoring = tailoredResume !== null;
+  const activeResume = tailoredResume ?? masterResume;
+
+  // Every mutation applies to whichever resume is currently active, so
+  // screens never need to know tailoring mode exists.
+  const applyAction = useCallback(
+    (action: ResumeAction) => {
+      if (tailoredResume) {
+        setTailoredResume((prev) => (prev ? resumeReducer(prev, action) : prev));
+      } else {
+        setMasterResume((prev) => resumeReducer(prev, action));
+      }
+    },
+    [tailoredResume]
+  );
 
   // Hydrate from AsyncStorage once on mount.
   useEffect(() => {
     (async () => {
       const [loadedResume, loadedAIUsage] = await Promise.all([loadResume(), loadAIUsage()]);
-      dispatch({ type: 'HYDRATE', resume: loadedResume });
+      setMasterResume(loadedResume);
       setAiUsage(loadedAIUsage);
       setIsLoaded(true);
     })();
   }, []);
 
-  // Debounced persistence — write on pause, not on keystroke (TRD.md Section 4).
+  // Debounced persistence — write on pause, not on keystroke (TRD.md Section
+  // 4). Only the master resume is ever persisted; a tailored copy in review
+  // must never overwrite it on disk.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!isLoaded) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      saveResume(resume);
+      saveResume(masterResume);
     }, SAVE_DEBOUNCE_MS);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [resume, isLoaded]);
+  }, [masterResume, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded || !aiUsage) return;
@@ -68,7 +101,7 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ResumeContextValue>(
     () => ({
       isLoaded,
-      resume,
+      resume: activeResume,
       aiUsage: aiUsage ?? {
         schemaVersion: 1,
         freeCreditsRemaining: 0,
@@ -76,28 +109,37 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
         subscriptionProductId: null,
         lastSyncedAt: new Date().toISOString(),
       },
-      updatePersonalInfo: (patch) => dispatch({ type: 'UPDATE_PERSONAL_INFO', patch }),
-      addSection: (sectionType) => dispatch({ type: 'ADD_SECTION', sectionType }),
-      removeSection: (sectionType) => dispatch({ type: 'REMOVE_SECTION', sectionType }),
-      reorderSections: (fromIndex, toIndex) => dispatch({ type: 'REORDER_SECTIONS', fromIndex, toIndex }),
-      addItem: (sectionType) => dispatch({ type: 'ADD_ITEM', sectionType }),
-      removeItem: (sectionType, itemIndex) => dispatch({ type: 'REMOVE_ITEM', sectionType, itemIndex }),
+      isTailoring,
+      startTailoring: (tailored) => setTailoredResume(tailored),
+      discardTailoring: () => setTailoredResume(null),
+      updatePersonalInfo: (patch) => applyAction({ type: 'UPDATE_PERSONAL_INFO', patch }),
+      addSection: (sectionType) => applyAction({ type: 'ADD_SECTION', sectionType }),
+      removeSection: (sectionType) => applyAction({ type: 'REMOVE_SECTION', sectionType }),
+      reorderSections: (fromIndex, toIndex) => applyAction({ type: 'REORDER_SECTIONS', fromIndex, toIndex }),
+      addItem: (sectionType) => applyAction({ type: 'ADD_ITEM', sectionType }),
+      removeItem: (sectionType, itemIndex) => applyAction({ type: 'REMOVE_ITEM', sectionType, itemIndex }),
       updateItem: (sectionType, itemIndex, patch) =>
-        dispatch({ type: 'UPDATE_ITEM', sectionType, itemIndex, patch }),
+        applyAction({ type: 'UPDATE_ITEM', sectionType, itemIndex, patch }),
       updateBullet: (sectionType, itemIndex, bulletIndex, text) =>
-        dispatch({ type: 'UPDATE_BULLET', sectionType, itemIndex, bulletIndex, text }),
-      addBullet: (sectionType, itemIndex) => dispatch({ type: 'ADD_BULLET', sectionType, itemIndex }),
+        applyAction({ type: 'UPDATE_BULLET', sectionType, itemIndex, bulletIndex, text }),
+      addBullet: (sectionType, itemIndex) => applyAction({ type: 'ADD_BULLET', sectionType, itemIndex }),
       removeBullet: (sectionType, itemIndex, bulletIndex) =>
-        dispatch({ type: 'REMOVE_BULLET', sectionType, itemIndex, bulletIndex }),
-      setTemplate: (template) => dispatch({ type: 'SET_TEMPLATE', template }),
+        applyAction({ type: 'REMOVE_BULLET', sectionType, itemIndex, bulletIndex }),
+      setTemplate: (template) => applyAction({ type: 'SET_TEMPLATE', template }),
       spendAICredit: () =>
         setAiUsage((prev) =>
           prev && !prev.subscriptionActive
             ? { ...prev, freeCreditsRemaining: Math.max(0, prev.freeCreditsRemaining - 1) }
             : prev
         ),
+      spendAICredits: (count) =>
+        setAiUsage((prev) =>
+          prev && !prev.subscriptionActive
+            ? { ...prev, freeCreditsRemaining: Math.max(0, prev.freeCreditsRemaining - count) }
+            : prev
+        ),
     }),
-    [isLoaded, resume, aiUsage]
+    [isLoaded, activeResume, aiUsage, isTailoring, applyAction]
   );
 
   return <ResumeContext.Provider value={value}>{children}</ResumeContext.Provider>;

@@ -52,6 +52,26 @@ async function run() {
   const okBody = await res.json();
   assert.strictEqual(okBody.rewrittenText, 'Rewritten bullet.');
 
+  // jobDescription too long -> 400
+  res = await worker.fetch(req({ sectionType: 'experience', text: 'did stuff', jobDescription: 'x'.repeat(6001) }), env);
+  assert.strictEqual(res.status, 400);
+
+  // jobDescription present and reasonable -> still succeeds, gets passed through to the prompt
+  global.fetch = async (_url, options) => {
+    const parsedBody = JSON.parse(options.body);
+    assert.ok(parsedBody.contents[0].parts[0].text.includes('Senior Engineer'));
+    return new Response(
+      JSON.stringify({ candidates: [{ content: { parts: [{ text: 'Tailored bullet.' }] } }] }),
+      { status: 200 }
+    );
+  };
+  res = await worker.fetch(
+    req({ sectionType: 'experience', text: 'did stuff', jobDescription: 'Looking for a Senior Engineer...' }),
+    env
+  );
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual((await res.json()).rewrittenText, 'Tailored bullet.');
+
   // Gemini failure -> 502, original text untouched by design (client-side concern, not tested here)
   global.fetch = async () => new Response('error', { status: 500 });
   res = await worker.fetch(req({ sectionType: 'experience', text: 'did stuff' }), env);

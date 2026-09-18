@@ -108,6 +108,8 @@ Both are singletons — there is exactly one `Resume` and one `AIUsage` record p
 
 Note: there is **no separate `freeCreditsExhausted` boolean**, even though the original PRD sketch had one — it's a derived value (`freeCreditsRemaining <= 0`) and storing it separately just creates a second source of truth that can drift out of sync with the count it's derived from. Compute it at read time instead.
 
+**Ephemeral tailoring's in-memory shape** (not a schema addition — nothing here is persisted): `ResumeContext` holds a second, nullable `tailoredResume: Resume | null` alongside the persisted master. When non-null (set by "Full Rewrite"), every mutation and the value exposed to screens as `resume` targets the tailored copy instead of the master; the debounced-save effect only ever writes the master. "Discard, back to master" just sets it back to `null`. This is the literal implementation of PRD.md Section 6's "Option A" — no new AsyncStorage key, no new schema version, because the whole point is that a tailored draft never touches disk.
+
 ### 2.4 Schema versioning
 
 `schemaVersion` exists on both records from day one, even though there's only one version right now — the day the resume section shape needs to change (a real possibility once templates are built out), old installs already have v1 data on disk with no server to migrate it. A `schemaVersion` field costs one line now; retrofitting version detection into data that was never tagged is a much bigger job later. `storage.js` checks the version on read and no-ops if it matches; a migration function is written only when a version bump actually happens, not preemptively.
@@ -139,7 +141,10 @@ Headers:
 Body:
 {
   "sectionType": "summary" | "education" | "experience" | "projects" | "skills" | "certifications",
-  "text": string   // max 2000 chars, enforced client-side and re-checked server-side
+  "text": string,             // max 2000 chars, enforced client-side and re-checked server-side
+  "jobDescription": string?   // optional, max 6000 chars — present only for "Full Rewrite" (re-tailoring
+                               // to a specific job, PRD.md Section 6); folded into the same prompt as
+                               // targeting context rather than a separate endpoint/contract
 }
 ```
 
