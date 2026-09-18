@@ -10,5 +10,6 @@ A running ledger of traps already identified and closed — append to this whene
 - **Don't automate PDF/Word visual-parity testing.** Two templates, checked manually against real sample data once, is enough — a snapshot-testing setup for two static layouts is more infrastructure than the problem warrants. (Still: check it manually before calling v1 done — the risk itself is real per → [[Export Pipeline]], only the automation is skippable.)
 - **Don't add server-side purchase receipt validation for v1.** `react-native-iap`'s local purchase state is trusted, consistent with the already-accepted local-credit-bypass limitation in the PRD. Revisit only if paid-tier abuse is actually observed, not preemptively.
 - **Don't bare `npm install` a new dependency in this project.** Always `npx expo install <pkg>` so the version matches SDK 57 instead of guessing — see AGENTS.md's warning that Expo's API surface has moved across recent SDKs.
+- **Increment the Worker's daily-cap KV counter before calling Gemini, not after.** Counting only on success lets a retry storm against a broken Gemini endpoint bypass the cap entirely (every failed attempt would be free to retry forever). See `worker/src/index.js`.
 
 ← back to [[Resume Builder MOC]]

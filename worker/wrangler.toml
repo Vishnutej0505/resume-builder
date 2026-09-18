@@ -8,7 +8,13 @@ compatibility_date = "2025-01-01"
 #
 # KV namespace for the daily spend cap (ARCHITECTURE.md Section 4.2).
 # Create it once with `wrangler kv namespace create USAGE_KV`, then paste the
-# returned id below.
+# returned id below and uncomment.
 # [[kv_namespaces]]
 # binding = "USAGE_KV"
 # id = "<paste-id-here>"
+
+# `wrangler dev` fails fast without a real KV binding. For local testing,
+# create a dev-only namespace instead:
+#   wrangler kv namespace create USAGE_KV --preview
+# and add its id as `preview_id` on the binding above, or run
+# `wrangler dev --local` which persists KV to disk automatically.

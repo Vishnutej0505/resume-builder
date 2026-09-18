@@ -11,4 +11,6 @@ Cloud-based, not on-device — see → [[Offline LLM idea (rejected)]] for why.
 
 Gates usage via → [[Monetization Model]]. Request/response shape → [[API Contracts]].
 
+**Implemented** in `worker/src/index.js` + `worker/src/prompts.js` (one instruction per section type — a bullet and a skills line need different treatment). Self-checked with `npm test` in `worker/` (mocked KV + fetch, no real Gemini call needed to verify the branches). Still needs, before it's live: `wrangler kv namespace create USAGE_KV` (paste the id into `worker/wrangler.toml`), then `wrangler secret put GEMINI_API_KEY` and `wrangler secret put APP_SHARED_SECRET`, then `wrangler deploy` — all manual steps requiring your own Cloudflare account, not something done from here.
+
 ← back to [[Resume Builder MOC]]
