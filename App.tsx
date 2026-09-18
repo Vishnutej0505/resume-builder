@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import { ResumeProvider } from './src/context/ResumeContext.tsx';
+import { ATSCheckScreen } from './src/screens/ATSCheckScreen.tsx';
 import { HomeScreen } from './src/screens/HomeScreen.tsx';
 import { colors, fontSize } from './src/theme/tokens.ts';
 
@@ -22,7 +23,9 @@ export default function App() {
           onNavigateSettings={() => setScreen('settings')}
         />
       )}
-      {screen === 'ats' && <ComingSoon title="ATS Check" onBack={() => setScreen('home')} />}
+      {screen === 'ats' && (
+        <ATSCheckScreen onNavigateHome={() => setScreen('home')} onNavigatePreview={() => setScreen('preview')} />
+      )}
       {screen === 'preview' && <ComingSoon title="Preview" onBack={() => setScreen('home')} />}
       {screen === 'settings' && <ComingSoon title="Settings" onBack={() => setScreen('home')} />}
       <StatusBar style="auto" />

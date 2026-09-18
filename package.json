@@ -21,7 +21,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types src/context/resumeReducer.test.ts"
+    "test": "node --experimental-strip-types src/context/resumeReducer.test.ts && node --experimental-strip-types src/lib/ats.test.ts"
   },
   "private": true,
   "devDependencies": {
