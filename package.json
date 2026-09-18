@@ -7,11 +7,15 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@types/react": "~19.2.4",
     "expo": "~57.0.23",
+    "expo-file-system": "~57.0.7",
+    "expo-print": "~57.0.2",
+    "expo-sharing": "~57.0.21",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-web": "^0.21.2",
+    "react-native-webview": "13.16.1",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -21,7 +25,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types src/context/resumeReducer.test.ts && node --experimental-strip-types src/lib/ats.test.ts"
+    "test": "node --experimental-strip-types src/context/resumeReducer.test.ts && node --experimental-strip-types src/lib/ats.test.ts && node --experimental-strip-types src/lib/export.test.ts && node --experimental-strip-types src/lib/templates/classic.test.ts"
   },
   "private": true,
   "devDependencies": {

@@ -26,6 +26,20 @@ export function createInitialAIUsage(): AIUsage {
   };
 }
 
+export interface ExportValidation {
+  ok: boolean;
+  missingField?: 'name' | 'email';
+}
+
+// Never export a blank/broken file — PRD.md Section 8. Kept here (not in
+// export.ts) so it stays testable without pulling in expo-print/expo-sharing,
+// which aren't importable under plain Node.
+export function validateForExport(resume: Resume): ExportValidation {
+  if (!resume.personalInfo.name.trim()) return { ok: false, missingField: 'name' };
+  if (!resume.personalInfo.email.trim()) return { ok: false, missingField: 'email' };
+  return { ok: true };
+}
+
 // Re-sequences order to 0..n-1 by CURRENT ARRAY POSITION — never trust gaps
 // or duplicates left in the stale `order` field (ARCHITECTURE.md Section
 // 2.2). Deliberately does not sort by `order` first: callers that just

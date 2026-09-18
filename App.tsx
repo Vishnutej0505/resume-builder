@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { ResumeProvider } from './src/context/ResumeContext.tsx';
 import { ATSCheckScreen } from './src/screens/ATSCheckScreen.tsx';
 import { HomeScreen } from './src/screens/HomeScreen.tsx';
+import { PreviewScreen } from './src/screens/PreviewScreen.tsx';
 import { colors, fontSize } from './src/theme/tokens.ts';
 
 // One state value at the app root, no router — per TRD.md Section 2 and
@@ -26,7 +27,9 @@ export default function App() {
       {screen === 'ats' && (
         <ATSCheckScreen onNavigateHome={() => setScreen('home')} onNavigatePreview={() => setScreen('preview')} />
       )}
-      {screen === 'preview' && <ComingSoon title="Preview" onBack={() => setScreen('home')} />}
+      {screen === 'preview' && (
+        <PreviewScreen onNavigateHome={() => setScreen('home')} onNavigateATS={() => setScreen('ats')} />
+      )}
       {screen === 'settings' && <ComingSoon title="Settings" onBack={() => setScreen('home')} />}
       <StatusBar style="auto" />
     </ResumeProvider>
