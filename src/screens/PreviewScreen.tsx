@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import type { ComponentType } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useResume } from '../context/ResumeContext.tsx';
-import { exportPdf, validateForExport } from '../lib/export.ts';
+import { exportPdf, exportWord, validateForExport } from '../lib/export.ts';
 import { renderClassicTemplate } from '../lib/templates/classic.ts';
 import { colors, fontSize, radius, spacing } from '../theme/tokens.ts';
 
@@ -15,9 +15,10 @@ interface Props {
 export function PreviewScreen({ onNavigateHome, onNavigateATS }: Props) {
   const { resume } = useResume();
   const [isExporting, setIsExporting] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
   const html = useMemo(() => renderClassicTemplate(resume), [resume]);
 
-  async function handleExportPdf() {
+  function handleExportPress() {
     const validation = validateForExport(resume);
     if (!validation.ok) {
       Alert.alert(
@@ -28,11 +29,20 @@ export function PreviewScreen({ onNavigateHome, onNavigateATS }: Props) {
       );
       return;
     }
+    setPickerVisible(true);
+  }
+
+  async function handleExport(format: 'pdf' | 'word') {
+    setPickerVisible(false);
     setIsExporting(true);
     try {
-      await exportPdf(html);
+      if (format === 'pdf') {
+        await exportPdf(html);
+      } else {
+        await exportWord(resume);
+      }
     } catch {
-      Alert.alert('Export failed', 'Something went wrong generating the PDF. Please try again.');
+      Alert.alert('Export failed', 'Something went wrong generating the file. Please try again.');
     } finally {
       setIsExporting(false);
     }
@@ -55,10 +65,23 @@ export function PreviewScreen({ onNavigateHome, onNavigateATS }: Props) {
       </View>
 
       <View style={styles.exportBar}>
-        <Pressable style={styles.exportButton} onPress={handleExportPdf} disabled={isExporting}>
-          <Text style={styles.exportButtonText}>{isExporting ? 'Exporting…' : 'Export PDF'}</Text>
+        <Pressable style={styles.exportButton} onPress={handleExportPress} disabled={isExporting}>
+          <Text style={styles.exportButtonText}>{isExporting ? 'Exporting…' : 'Export'}</Text>
         </Pressable>
       </View>
+
+      <Modal visible={pickerVisible} transparent animationType="fade" onRequestClose={() => setPickerVisible(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setPickerVisible(false)}>
+          <View style={styles.modalSheet}>
+            <Pressable style={styles.modalRow} onPress={() => handleExport('pdf')}>
+              <Text style={styles.modalRowText}>Export as PDF</Text>
+            </Pressable>
+            <Pressable style={styles.modalRow} onPress={() => handleExport('word')}>
+              <Text style={styles.modalRowText}>Export as Word</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
 
       <View style={styles.footerNav}>
         <Pressable style={styles.navButton} onPress={onNavigateHome}>
@@ -113,6 +136,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   exportButtonText: { color: '#fff', fontSize: fontSize.bodyLg, fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.4)', justifyContent: 'flex-end' },
+  modalSheet: {
+    backgroundColor: colors.bg,
+    borderTopLeftRadius: radius.md + 8,
+    borderTopRightRadius: radius.md + 8,
+    padding: spacing.lg,
+  },
+  modalRow: { paddingVertical: spacing.md },
+  modalRowText: { fontSize: fontSize.bodyLg, color: colors.textPrimary },
   footerNav: { height: 64, borderTopWidth: 1, borderTopColor: colors.border, flexDirection: 'row' },
   navButton: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
   navPill: { width: 56, height: 28, borderRadius: radius.pill, backgroundColor: '#DBEAFE', alignItems: 'center', justifyContent: 'center' },
