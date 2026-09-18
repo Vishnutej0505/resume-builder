@@ -1,0 +1,5 @@
+# Copy to .dev.vars for local `wrangler dev` testing. Never commit .dev.vars.
+# In production, set these with `wrangler secret put <NAME>` instead — they
+# never go in wrangler.toml.
+GEMINI_API_KEY=
+APP_SHARED_SECRET=
