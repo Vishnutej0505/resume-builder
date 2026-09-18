@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useResume } from '../context/ResumeContext.tsx';
 import { matchJobDescription, runChecklist, type JDMatchResult } from '../lib/ats.ts';
 import { colors, fontSize, radius, spacing } from '../theme/tokens.ts';
@@ -7,9 +7,10 @@ import { colors, fontSize, radius, spacing } from '../theme/tokens.ts';
 interface Props {
   onNavigateHome: () => void;
   onNavigatePreview: () => void;
+  onBlocked: () => void;
 }
 
-export function ATSCheckScreen({ onNavigateHome, onNavigatePreview }: Props) {
+export function ATSCheckScreen({ onNavigateHome, onNavigatePreview, onBlocked }: Props) {
   const { resume, aiUsage } = useResume();
   const [jobDescription, setJobDescription] = useState('');
   const [result, setResult] = useState<JDMatchResult | null | 'too-short'>(null);
@@ -19,12 +20,7 @@ export function ATSCheckScreen({ onNavigateHome, onNavigatePreview }: Props) {
 
   function handleCheckMatch() {
     if (!canCheckMatch) {
-      // Paywall screen isn't built yet — gating logic itself is correct per
-      // APP_FLOW.md Section 5 (shares the AI-rewrite gate, no separate counter).
-      Alert.alert(
-        'Re-tailoring for a new job needs a subscription',
-        "You've used your free AI credits. Subscribing is coming soon."
-      );
+      onBlocked();
       return;
     }
     const match = matchJobDescription(resume, jobDescription);

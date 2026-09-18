@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PersonalInfoCard } from '../components/PersonalInfoCard.tsx';
 import { SectionCard } from '../components/SectionCard.tsx';
 import { useResume } from '../context/ResumeContext.tsx';
@@ -11,9 +11,10 @@ interface Props {
   onNavigateATS: () => void;
   onNavigatePreview: () => void;
   onNavigateSettings: () => void;
+  onAIBlocked: () => void;
 }
 
-export function HomeScreen({ onNavigateATS, onNavigatePreview, onNavigateSettings }: Props) {
+export function HomeScreen({ onNavigateATS, onNavigatePreview, onNavigateSettings, onAIBlocked }: Props) {
   const {
     resume,
     aiUsage,
@@ -34,15 +35,6 @@ export function HomeScreen({ onNavigateATS, onNavigatePreview, onNavigateSetting
   const availableSectionTypes = ALL_SECTION_TYPES.filter(
     (t) => !resume.sections.some((s) => s.type === t)
   );
-
-  function handleAIBlocked() {
-    // Paywall screen isn't built yet — real gating logic is already correct
-    // (per APP_FLOW.md Section 5), just the UI surface is a placeholder.
-    Alert.alert(
-      "You're out of free AI credits",
-      'Subscribing to unlock more AI rewrites is coming soon. Manual editing and export stay free either way.'
-    );
-  }
 
   return (
     <View style={styles.screen}>
@@ -88,7 +80,7 @@ export function HomeScreen({ onNavigateATS, onNavigatePreview, onNavigateSetting
                 onAddBullet={(itemIndex) => addBullet(section.type, itemIndex)}
                 onRemoveBullet={(itemIndex, bulletIndex) => removeBullet(section.type, itemIndex, bulletIndex)}
                 canUseAI={canUseAI}
-                onBlocked={handleAIBlocked}
+                onBlocked={onAIBlocked}
                 rewrite={rewriteText}
                 onCreditSpent={spendAICredit}
               />
