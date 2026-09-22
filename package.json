@@ -26,7 +26,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types src/context/resumeReducer.test.ts && node --experimental-strip-types src/lib/ats.test.ts && node --experimental-strip-types src/lib/export.test.ts && node --experimental-strip-types src/lib/templates/classic.test.ts && node --experimental-strip-types src/lib/docxExport.test.ts && node --experimental-strip-types src/lib/fullRewrite.test.ts && node --experimental-strip-types src/lib/ai.test.ts"
+    "test": "node --experimental-strip-types src/context/resumeReducer.test.ts && node --experimental-strip-types src/lib/ats.test.ts && node --experimental-strip-types src/lib/export.test.ts && node --experimental-strip-types src/lib/templates/shared.test.ts && node --experimental-strip-types src/lib/templates/templates.test.ts && node --experimental-strip-types src/lib/docxExport.test.ts && node --experimental-strip-types src/lib/fullRewrite.test.ts && node --experimental-strip-types src/lib/ai.test.ts"
   },
   "private": true,
   "devDependencies": {

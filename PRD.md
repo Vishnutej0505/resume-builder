@@ -143,6 +143,6 @@ AIUsage (local)
 
 ## 11. Open Questions
 
-1. **Templates** — need to actually search and pick 1-2 open-source ATS-safe templates (next step, both searching in parallel).
+1. ~~**Templates**~~ — **Resolved.** Two templates shipped: **Classic** (serif, traditional) and **Modern** (sans-serif, accent-colored headings). Both share the exact same single-column, standard-headings structure (`src/lib/templates/shared.ts`) and differ only in typography/color — per PRD Section 5, "1-2 ATS-safe templates" never meant layout variety, since layout variety is what makes a template ATS-unsafe. User picks via a switcher on Preview; choice is saved on the resume record (`selectedTemplate`).
 2. **Exact free-credit pool size (~20)** — a placeholder based on rough estimate of sections × bullets; should be sanity-checked once real template/section structure is built, since actual rewrite count per resume may differ.
 3. **JD-match scoring specifics** — exact keyword-matching approach (simple overlap vs. weighted by section) not yet designed; to be scoped when building that feature.

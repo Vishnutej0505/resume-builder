@@ -1,40 +1,11 @@
 import type { Resume } from '../../types/resume.ts';
-import { SECTION_LABELS } from '../../theme/tokens.ts';
+import { buildResumeBodyHtml } from './shared.ts';
 
 // Single source of truth for both the live WebView preview and the PDF
 // export (TRD.md Section 3) — one HTML string, so the two can't drift.
-// Only one template exists so far: PRD.md Section 11's open question on
-// which 1-2 ATS-safe templates to use is still unresolved, so a second
-// template/switcher isn't built yet — it would be guessing at an
-// undecided choice.
+// Traditional serif look, closest to a "classic" printed resume — the safer
+// of the two default choices for older/more conservative hiring pipelines.
 export function renderClassicTemplate(resume: Resume): string {
-  const { personalInfo, sections } = resume;
-  const contactLine = [personalInfo.email, personalInfo.phone, personalInfo.location, personalInfo.linkedIn]
-    .filter(Boolean)
-    .join(' &middot; ');
-
-  const sectionsHtml = sections
-    .slice()
-    .sort((a, b) => a.order - b.order)
-    .map((section) => {
-      const itemsHtml = section.items
-        .map((item) => {
-          const titleLine =
-            section.type === 'skills'
-              ? ''
-              : `<div class="item-title">${escapeHtml(item.title)}</div>` +
-                (item.dateRange ? `<div class="item-date">${escapeHtml(item.dateRange)}</div>` : '');
-          const bulletsHtml = item.bullets
-            .filter((b) => b.trim())
-            .map((b) => `<div class="bullet">&bull; ${escapeHtml(b)}</div>`)
-            .join('');
-          return `<div class="item">${titleLine}${bulletsHtml}</div>`;
-        })
-        .join('');
-      return `<div class="section"><div class="section-heading">${(SECTION_LABELS[section.type] ?? section.type).toUpperCase()}</div>${itemsHtml}</div>`;
-    })
-    .join('');
-
   return `<!doctype html>
 <html>
 <head>
@@ -52,17 +23,7 @@ export function renderClassicTemplate(resume: Resume): string {
 </style>
 </head>
 <body>
-  <div class="name">${escapeHtml(personalInfo.name || 'Your Name')}</div>
-  <div class="contact">${contactLine}</div>
-  ${sectionsHtml}
+  ${buildResumeBodyHtml(resume)}
 </body>
 </html>`;
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }

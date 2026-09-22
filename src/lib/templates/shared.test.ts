@@ -1,8 +1,10 @@
-// No framework — assert-based self-check for the template's escaping and
-// section-type branching (skills omits the title/date line, others don't).
+// No framework — assert-based self-check for the shared body builder's
+// escaping and section-type branching (skills omits the title/date line,
+// others don't). Both templates delegate here, so this is where the real
+// logic lives, not in classic.ts/modern.ts themselves.
 import assert from 'node:assert';
 import { createEmptyResume } from '../resumeModel.ts';
-import { renderClassicTemplate } from './classic.ts';
+import { buildResumeBodyHtml } from './shared.ts';
 
 let resume = createEmptyResume();
 resume = {
@@ -14,7 +16,7 @@ resume = {
   ],
 };
 
-const html = renderClassicTemplate(resume);
+const html = buildResumeBodyHtml(resume);
 
 // User-typed HTML is escaped, never injected raw
 assert.ok(!html.includes('<script>alert(1)</script>'));
@@ -25,4 +27,4 @@ assert.ok(html.includes('Intern'));
 assert.ok(html.includes('2025'));
 assert.ok(html.includes('React, Node'));
 
-console.log('All classic template self-checks passed.');
+console.log('All shared template-body self-checks passed.');

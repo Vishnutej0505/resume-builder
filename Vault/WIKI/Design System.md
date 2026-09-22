@@ -8,5 +8,6 @@ Full brief in `DESIGN_BRIEF.md` (project root) — this note is the shape to rem
 - **System font only**, no custom font bundle — see → [[Tech Stack]]'s "cheap to render" principle.
 - **Color tokens, spacing scale, type scale** are all fixed lists in `DESIGN_BRIEF.md` Section 3 — never pick an arbitrary value outside them.
 - **Never color-only for meaning** — the ATS checklist's pass/fail is icon + text always, a real accessibility requirement given the stakes (a real job application), not decoration.
+- **Templates ("Classic" and "Modern") are typography/color choices only, never layout choices.** Both delegate to one shared section-builder (`src/lib/templates/shared.ts`) since PRD Section 6 requires every template to stay single-column/standard-headings — the "1-2 templates" question was never about visual variety at the layout level, since layout variety is exactly what makes a resume ATS-unsafe.
 
 ← back to [[Resume Builder MOC]]

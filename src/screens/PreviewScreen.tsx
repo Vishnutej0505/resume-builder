@@ -5,6 +5,7 @@ import { WebView } from 'react-native-webview';
 import { useResume } from '../context/ResumeContext.tsx';
 import { exportPdf, exportWord, validateForExport } from '../lib/export.ts';
 import { renderClassicTemplate } from '../lib/templates/classic.ts';
+import { renderModernTemplate } from '../lib/templates/modern.ts';
 import { colors, fontSize, radius, spacing } from '../theme/tokens.ts';
 
 interface Props {
@@ -12,11 +13,21 @@ interface Props {
   onNavigateATS: () => void;
 }
 
+const TEMPLATES: Record<string, { label: string; render: (resume: Parameters<typeof renderClassicTemplate>[0]) => string }> = {
+  classic: { label: 'Classic', render: renderClassicTemplate },
+  modern: { label: 'Modern', render: renderModernTemplate },
+};
+const TEMPLATE_ORDER = ['classic', 'modern'];
+
 export function PreviewScreen({ onNavigateHome, onNavigateATS }: Props) {
-  const { resume, isTailoring } = useResume();
+  const { resume, isTailoring, setTemplate } = useResume();
   const [isExporting, setIsExporting] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
-  const html = useMemo(() => renderClassicTemplate(resume), [resume]);
+  const activeTemplate = TEMPLATES[resume.selectedTemplate] ? resume.selectedTemplate : 'classic';
+  const html = useMemo(
+    () => TEMPLATES[activeTemplate].render(resume),
+    [resume, activeTemplate]
+  );
 
   function handleExportPress() {
     const validation = validateForExport(resume);
@@ -53,6 +64,20 @@ export function PreviewScreen({ onNavigateHome, onNavigateATS }: Props) {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Preview</Text>
         {isTailoring && <Text style={styles.tailoringChip}>Tailored draft</Text>}
+      </View>
+
+      <View style={styles.templateSwitcher}>
+        {TEMPLATE_ORDER.map((key) => (
+          <Pressable
+            key={key}
+            style={[styles.templateOption, activeTemplate === key && styles.templateOptionActive]}
+            onPress={() => setTemplate(key)}
+          >
+            <Text style={[styles.templateOptionText, activeTemplate === key && styles.templateOptionTextActive]}>
+              {TEMPLATES[key].label}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       <View style={styles.documentContainer}>
@@ -130,6 +155,33 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: radius.pill,
   },
+  templateSwitcher: {
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
+    marginLeft: spacing.lg,
+    marginTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    padding: 3,
+    gap: 2,
+  },
+  templateOption: {
+    height: 30,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  templateOptionActive: {
+    backgroundColor: colors.bg,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  templateOptionText: { fontSize: fontSize.caption, fontWeight: '500', color: colors.textSecondary },
+  templateOptionTextActive: { fontWeight: '600', color: colors.textPrimary },
   documentContainer: {
     flex: 1,
     margin: spacing.lg,

@@ -40,7 +40,7 @@ Companion to `PRD.md`. The PRD says *what* and *why*; this says *how* — stack,
   - **PDF export** — the same HTML string passed straight to `expo-print`.
 - This avoids maintaining a separate React-Native-component preview that could visually drift from the exported PDF (PRD's "extreme overflow needs real testing" edge case is handled by CSS reflow, once, not twice).
 - **Word export stays a genuinely separate pipeline** (`docx` library, building `.docx` primitives from the same resume data object) — per PRD Section 6, this is accepted real work, not a bug to fix. Visual parity between the two is verified manually against real sample data before v1 is called done, not automated (not worth a snapshot-testing setup for two templates).
-- Template selection (1-2 templates for v1) is a string key on the resume record (`selectedTemplate`), used to pick which HTML template function runs — no template engine/DSL needed for 1-2 static layouts.
+- Template selection (**Classic** and **Modern**, shipped) is a string key on the resume record (`selectedTemplate`), used to pick which HTML template function runs — no template engine/DSL needed for two static layouts. Both templates delegate their section-building to one shared function (`src/lib/templates/shared.ts`) and differ only in the `<style>` block, since PRD Section 6 requires every template to stay single-column/standard-headings — a "template" here is a typography/color choice, never a layout choice.
 
 ## 4. Local Storage
 
