@@ -30,3 +30,32 @@ ${text}
 
 Rewritten version only, no preamble, no quotes around it:`;
 }
+
+const ALLOWED_SECTION_TYPES = ['summary', 'education', 'experience', 'projects', 'skills', 'certifications'];
+
+// Resume Import: parse arbitrary pasted resume text into our structured
+// schema. This is extraction, not creative rewriting, so the "never invent"
+// instruction matters even more here than in buildPrompt.
+export function buildImportPrompt(text) {
+  return `Extract the resume information below into strict JSON matching exactly this shape, nothing else:
+
+{
+  "personalInfo": { "name": string, "email": string, "phone": string, "location": string, "linkedIn": string|null },
+  "sections": [
+    { "type": one of ${JSON.stringify(ALLOWED_SECTION_TYPES)}, "items": [
+        { "title": string, "subtitle": string|null, "dateRange": string, "bullets": [string] }
+    ] }
+  ]
+}
+
+Rules:
+- Only include information actually present in the text below. Never invent names, dates, companies, or numbers.
+- Use "" for a personalInfo field that isn't present, never omit the key.
+- Skip a section type entirely if the resume has nothing for it. Never include a section with an empty items array.
+- For a "skills" section, put the whole skills list as a single bullet string; leave title, subtitle, dateRange as "".
+- One resume item's multiple description lines each become a separate string in "bullets".
+- Output ONLY the JSON object — no markdown code fences, no commentary before or after it.
+
+Resume text:
+${text}`;
+}

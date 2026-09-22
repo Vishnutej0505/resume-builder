@@ -44,6 +44,12 @@ Android hardware back button: from ATS Check, Preview, Paywall, or Settings → 
 
 - **Header gear icon** → navigate to **Settings**.
 - **Personal info fields** (name, email, phone, location, LinkedIn) — inline editable, autosave on blur (debounced write to AsyncStorage per TRD Section 4). No navigation.
+- **"↻ Import from another resume" / "Paste an existing resume instead" link** (label varies on whether the resume already has content) → opens the Resume Import modal in place (not a new screen):
+  1. Paste box + Import button. Same AI gate as everywhere else — **blocked** → Paywall.
+  2. Under ~50 chars → inline "too short" warning, no call made.
+  3. **Allowed** → loading spinner → `POST /import` (see `ARCHITECTURE.md` §4.1a).
+  4. **Success** → a confirmation step lists what was found (name, section counts) before anything changes; if the resume already had content, an explicit warning that this replaces it and can't be undone. **Confirm** → `importResume()` replaces the master's `personalInfo`/`sections` wholesale (and drops any active Full-Rewrite tailoring, to avoid importing on top of a stale tailored draft), spends one AI credit, closes the modal. **Cancel** → discarded, master untouched.
+  5. **Failure** → a distinct message per reason (couldn't parse / daily cap / network), "Try again" returns to the paste box with nothing changed.
 - **"+ Add Section" button** → shows a picker limited to section types not yet added → on pick, appends an empty `ResumeSection`, stays on **Home**, scrolls to the new section.
 - **Section delete icon** → confirm dialog → on confirm, removes the section and re-sequences remaining `order` values (per ARCHITECTURE Section 2.2). Stays on **Home**.
 - **Section drag handle** → reorder, re-sequences `order` on drop. Stays on **Home**.

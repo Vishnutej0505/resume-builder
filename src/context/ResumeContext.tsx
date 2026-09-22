@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { loadAIUsage, loadResume, saveAIUsage, saveResume } from '../lib/storage.ts';
-import type { AIUsage, PersonalInfo, Resume, SectionItem, SectionType } from '../types/resume.ts';
+import type { AIUsage, PersonalInfo, Resume, ResumeSection, SectionItem, SectionType } from '../types/resume.ts';
 import { resumeReducer } from './resumeReducer.ts';
 import type { ResumeAction } from './resumeReducer.ts';
 
@@ -17,6 +17,11 @@ interface ResumeContextValue {
   isTailoring: boolean;
   startTailoring: (tailoredResume: Resume) => void;
   discardTailoring: () => void;
+  // Replaces the master resume's personalInfo/sections wholesale (Resume
+  // Import). Always targets the master directly, bypassing tailoring mode —
+  // importing new content while viewing a stale tailored draft would be
+  // confusing, so any active tailoring is dropped first.
+  importResume: (personalInfo: PersonalInfo, sections: ResumeSection[]) => void;
   updatePersonalInfo: (patch: Partial<PersonalInfo>) => void;
   addSection: (sectionType: SectionType) => void;
   removeSection: (sectionType: SectionType) => void;
@@ -112,6 +117,10 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
       isTailoring,
       startTailoring: (tailored) => setTailoredResume(tailored),
       discardTailoring: () => setTailoredResume(null),
+      importResume: (personalInfo, sections) => {
+        setTailoredResume(null);
+        setMasterResume((prev) => ({ ...prev, personalInfo, sections }));
+      },
       updatePersonalInfo: (patch) => applyAction({ type: 'UPDATE_PERSONAL_INFO', patch }),
       addSection: (sectionType) => applyAction({ type: 'ADD_SECTION', sectionType }),
       removeSection: (sectionType) => applyAction({ type: 'REMOVE_SECTION', sectionType }),

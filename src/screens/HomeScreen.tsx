@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ImportResumeModal } from '../components/ImportResumeModal.tsx';
 import { PersonalInfoCard } from '../components/PersonalInfoCard.tsx';
 import { SectionCard } from '../components/SectionCard.tsx';
 import { useResume } from '../context/ResumeContext.tsx';
@@ -30,13 +31,16 @@ export function HomeScreen({ onNavigateATS, onNavigatePreview, onNavigateSetting
     addBullet,
     removeBullet,
     spendAICredit,
+    importResume,
   } = useResume();
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [importVisible, setImportVisible] = useState(false);
 
   const canUseAI = aiUsage.subscriptionActive || aiUsage.freeCreditsRemaining > 0;
   const availableSectionTypes = ALL_SECTION_TYPES.filter(
     (t) => !resume.sections.some((s) => s.type === t)
   );
+  const hasExistingContent = Boolean(resume.personalInfo.name.trim()) || resume.sections.length > 0;
 
   return (
     <View style={styles.screen}>
@@ -67,6 +71,12 @@ export function HomeScreen({ onNavigateATS, onNavigatePreview, onNavigateSetting
         )}
 
         <PersonalInfoCard personalInfo={resume.personalInfo} onChange={updatePersonalInfo} />
+
+        <Pressable style={styles.importLink} onPress={() => setImportVisible(true)}>
+          <Text style={styles.importLinkText}>
+            {hasExistingContent ? '↻ Import from another resume' : '↻ Paste an existing resume instead'}
+          </Text>
+        </Pressable>
 
         {resume.sections.length === 0 ? (
           <View style={styles.emptyState}>
@@ -126,6 +136,16 @@ export function HomeScreen({ onNavigateATS, onNavigatePreview, onNavigateSetting
         </Pressable>
       </Modal>
 
+      <ImportResumeModal
+        visible={importVisible}
+        onClose={() => setImportVisible(false)}
+        onImport={importResume}
+        hasExistingContent={hasExistingContent}
+        canUseAI={canUseAI}
+        onBlocked={onAIBlocked}
+        onCreditSpent={spendAICredit}
+      />
+
       <View style={styles.footerNav}>
         <View style={styles.navButton}>
           <View style={styles.navPill}>
@@ -183,6 +203,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addSectionText: { color: colors.accent, fontSize: fontSize.body, fontWeight: '600' },
+  importLink: { alignSelf: 'flex-start' },
+  importLinkText: { fontSize: fontSize.caption, fontWeight: '600', color: colors.textSecondary },
   tailoringBanner: {
     backgroundColor: '#FEF3C7',
     borderRadius: radius.md,

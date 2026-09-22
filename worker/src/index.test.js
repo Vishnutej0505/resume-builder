@@ -19,8 +19,8 @@ function makeKv(initial = {}) {
 
 const env = { APP_SHARED_SECRET: 'test-secret', GEMINI_API_KEY: 'fake-key', USAGE_KV: makeKv() };
 
-function req(body, { secret = 'test-secret' } = {}) {
-  return new Request('https://worker.example/rewrite', {
+function req(body, { secret = 'test-secret', path = '/rewrite' } = {}) {
+  return new Request(`https://worker.example${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-App-Secret': secret },
     body: JSON.stringify(body),
@@ -82,6 +82,54 @@ async function run() {
   const cappedEnv = { ...env, USAGE_KV: makeKv({ [`usage:${new Date().toISOString().slice(0, 10)}`]: '500' }) };
   res = await worker.fetch(req({ text: 'did stuff' }), cappedEnv);
   assert.strictEqual(res.status, 429);
+
+  // --- /import ---
+
+  // too short -> 400 (garbage guard, same standard as JD matching)
+  res = await worker.fetch(req({ text: 'hi' }, { path: '/import' }), env);
+  assert.strictEqual(res.status, 400);
+
+  // valid JSON response -> parsed, sanitized, sections re-ordered by array position
+  global.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: '```json\n' + JSON.stringify({
+                    personalInfo: { name: 'Aditi Sharma', email: 'a@x.com', phone: '', location: '', linkedIn: null },
+                    sections: [
+                      { type: 'experience', items: [{ title: 'Intern', subtitle: null, dateRange: '2025', bullets: ['Did X'] }] },
+                      { type: 'not-a-real-type', items: [{ title: 'x', bullets: [] }] }, // must be dropped
+                    ],
+                  }) + '\n```',
+                },
+              ],
+            },
+          },
+        ],
+      }),
+      { status: 200 }
+    );
+  res = await worker.fetch(req({ text: 'x'.repeat(60) }, { path: '/import' }), env);
+  assert.strictEqual(res.status, 200);
+  const importBody = await res.json();
+  assert.strictEqual(importBody.resume.personalInfo.name, 'Aditi Sharma');
+  assert.strictEqual(importBody.resume.sections.length, 1); // invalid type dropped
+  assert.strictEqual(importBody.resume.sections[0].order, 0);
+
+  // Gemini returns unparseable text -> parse_failed, not a crash
+  global.fetch = async () =>
+    new Response(
+      JSON.stringify({ candidates: [{ content: { parts: [{ text: 'not json at all' }] } }] }),
+      { status: 200 }
+    );
+  res = await worker.fetch(req({ text: 'x'.repeat(60) }, { path: '/import' }), env);
+  assert.strictEqual(res.status, 502);
+  assert.strictEqual((await res.json()).error, 'parse_failed');
+  global.fetch = realFetch;
 
   console.log('All worker self-checks passed.');
 }

@@ -176,6 +176,35 @@ Client behavior per PRD Section 8: **any non-200 response, or a client-side fetc
 4. Build a prompt from a per-`sectionType` template (`worker/src/prompts.js` — one short template per section type, since a bullet for "experience" and a line for "summary" warrant different instructions) and call Gemini.
 5. Return `{ rewrittenText }`, or 502 if the Gemini call fails/times out.
 
+### 4.1a App → Cloudflare Worker: `POST /import` (Resume Import)
+
+A second route on the same Worker, sharing the same secret check, CORS, and daily-cap counter — not a separate deployment.
+
+**Request**
+```
+Headers: same as /rewrite
+
+Body:
+{ "text": string }   // raw pasted resume text, 50-8000 chars
+```
+
+**Responses**
+```
+200 OK
+{ "resume": { "personalInfo": {...}, "sections": [...] } }   // matches the client Resume shape exactly
+
+400 Bad Request
+{ "error": "empty_text" | "text_too_long" }   // empty_text also covers "too short to mean anything" (<50 chars)
+
+401 / 429 — same as /rewrite
+
+502 Bad Gateway
+{ "error": "upstream_error" }    // Gemini call failed, timed out, or errored
+{ "error": "parse_failed" }      // Gemini responded but didn't return parseable, valid-shaped JSON
+```
+
+Unlike `/rewrite`, the client surfaces a distinct message per error code here (`src/components/ImportResumeModal.tsx`) rather than one generic retry message — Resume Import is a deliberate one-shot action the user consciously starts, not an inline per-bullet convenience, so telling them *why* it failed is worth the extra surface area. The Worker strips a possible ` ```json ` fence before `JSON.parse`, and sanitizes every field afterward (unknown section types dropped, non-string fields defaulted) rather than trusting Gemini's output shape — a resume with a mangled personalInfo field would otherwise crash the client, not just look wrong. The Gemini call itself gets a longer timeout (25s vs. 10s for `/rewrite`) since parsing a whole resume into JSON takes longer than rewriting one bullet.
+
 ### 4.3 Worker → Gemini API
 
 Fixed external contract (Google's REST `generateContent` endpoint) — not something this project designs, just documented for reference:
